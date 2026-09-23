@@ -4,11 +4,18 @@ import type {
     IncidentSeverity
 } from "../domain/incident.js";
 import { NotFoundError } from "../errors/NotFoundError.js";
+import { withTransaction } from "../database/transaction.js";
+import { IncidentEventRepository } from "../repositories/incident-event.repository.js";
+
+
 
 interface CreateIncidentInput {
     service: string;
     severity: IncidentSeverity;
 }
+
+const incidentEventRepository =
+    new IncidentEventRepository();
 
 export class IncidentService {
     constructor(
@@ -42,6 +49,31 @@ export class IncidentService {
         }
 
         return incident;
+    }
+
+
+
+    async createIncidentWithEvent(
+        input: CreateIncidentInput
+    ): Promise<Incident> {
+        return withTransaction(async (client) => {
+            const incident =
+                await this.incidentRepository.createWithClient(
+                    client,
+                    {
+                        service: input.service,
+                        severity: input.severity,
+                        status: "detected"
+                    }
+                );
+
+            await incidentEventRepository.create(client, {
+                incidentId: incident.id,
+                eventType:"INCIDENT_CREATED"
+            });
+
+            return incident;
+        });
     }
 }
 
