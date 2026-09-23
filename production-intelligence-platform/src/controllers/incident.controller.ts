@@ -15,7 +15,7 @@ export const createIncident = async (
 ) => {
   try {
     const incident =
-      await incidentService.createIncident({
+      await incidentService.createIncidentWithEvent({
         service: req.body.service,
         severity: req.body.severity
       });
