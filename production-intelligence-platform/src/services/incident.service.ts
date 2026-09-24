@@ -1,79 +1,85 @@
-import { IncidentRepository } from "../repositories/incident.repository.js";
 import type {
-    Incident,
-    IncidentSeverity
+  Incident,
+  IncidentSeverity
 } from "../domain/incident.js";
+
 import { NotFoundError } from "../errors/NotFoundError.js";
 import { withTransaction } from "../database/transaction.js";
-import { IncidentEventRepository } from "../repositories/incident-event.repository.js";
 
+import type {
+  IncidentRepositoryContract
+} from "../repositories/incident.repository.interface.js";
 
+import type {
+  IncidentEventRepositoryContract
+} from "../repositories/incident-event.repository.interface.js";
 
 interface CreateIncidentInput {
-    service: string;
-    severity: IncidentSeverity;
+  service: string;
+  severity: IncidentSeverity;
 }
 
-const incidentEventRepository =
-    new IncidentEventRepository();
-
 export class IncidentService {
-    constructor(
-        private readonly incidentRepository: IncidentRepository
-    ) { }
 
-    async createIncident(
-        input: CreateIncidentInput
-    ): Promise<Incident> {
-        const incident =
-            await this.incidentRepository.create({
-                service: input.service,
-                severity: input.severity,
-                status: "detected"
-            });
+  constructor(
+    private readonly incidentRepository: IncidentRepositoryContract,
+    private readonly incidentEventRepository: IncidentEventRepositoryContract
+  ) {}
 
-        return incident;
+  async createIncident(
+    input: CreateIncidentInput
+  ): Promise<Incident> {
+
+    return this.incidentRepository.create({
+      service: input.service,
+      severity: input.severity,
+      status: "detected"
+    });
+  }
+
+  async getIncidentById(
+    id: string
+  ): Promise<Incident> {
+
+    const incident =
+      await this.incidentRepository.findById(id);
+
+    if (!incident) {
+      throw new NotFoundError(
+        "Incident not found",
+        "INCIDENT_NOT_FOUND"
+      );
     }
 
-    async getIncidentById(
-        id: string
-    ): Promise<Incident> {
-        const incident =
-            await this.incidentRepository.findById(id);
+    return incident;
+  }
 
-        if (!incident) {
-            throw new NotFoundError(
-                "Incident not found",
-                "INCIDENT_NOT_FOUND"
-            );
+  async createIncidentWithEvent(
+    input: CreateIncidentInput
+  ): Promise<Incident> {
+
+    return withTransaction(async (client) => {
+
+      const incident =
+        await this.incidentRepository.createWithClient(
+          client,
+          {
+            service: input.service,
+            severity: input.severity,
+            status: "detected"
+          }
+        );
+
+      await this.incidentEventRepository.create(
+        client,
+        {
+          incidentId: incident.id,
+          eventType: "INCIDENT_CREATED"
         }
+      );
 
-        return incident;
-    }
-
-
-
-    async createIncidentWithEvent(
-        input: CreateIncidentInput
-    ): Promise<Incident> {
-        return withTransaction(async (client) => {
-            const incident =
-                await this.incidentRepository.createWithClient(
-                    client,
-                    {
-                        service: input.service,
-                        severity: input.severity,
-                        status: "detected"
-                    }
-                );
-
-            await incidentEventRepository.create(client, {
-                incidentId: incident.id,
-                eventType:"INCIDENT_CREATED"
-            });
-
-            return incident;
-        });
-    }
+      return incident;
+    });
+  }
 }
 
