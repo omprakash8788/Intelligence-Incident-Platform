@@ -1,15 +1,17 @@
 import type { PoolClient } from "pg";
+import type {
+  CreateIncidentEventData,
+  IncidentEventRepositoryContract
+} from "./incident-event.repository.interface.js";
 
-interface CreateIncidentEventData {
-  incidentId: string;
-  eventType: string;
-}
+export class IncidentEventRepository
+  implements IncidentEventRepositoryContract {
 
-export class IncidentEventRepository {
   async create(
     client: PoolClient,
     data: CreateIncidentEventData
   ) {
+
     const query = `
       INSERT INTO incident_events (
         incident_id,
