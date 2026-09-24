@@ -8,7 +8,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "migrate": "tsx src/database/migrate.ts"
   },
   "keywords": [],
   "author": "",
