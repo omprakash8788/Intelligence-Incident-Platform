@@ -1,0 +1,9 @@
+CREATE TABLE incidents (
+    id UUID PRIMARY KEY,
+    service VARCHAR(100) NOT NULL,
+    severity VARCHAR(20) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+

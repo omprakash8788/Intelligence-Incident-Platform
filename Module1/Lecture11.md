@@ -17,6 +17,10 @@ Our application needs to know:
 
 And another developer should be able to clone the project and run one command to create the correct database.
 
+---
+
+
+
 ### 1. The problem with manual SQL
 
 Imagine today we have:
@@ -60,6 +64,9 @@ I have executed migrations:
 003
 ```
 
+---
+
+
 ### 2. Migration principle
 
 A migration should generally be:
@@ -75,6 +82,8 @@ database/
     └── 003_add_incident_indexes.sql
 ```
 The numbers determine execution order.
+
+---
 
 ### 3. Create migration directory
 
@@ -108,6 +117,10 @@ src/
 └── ...
 ```
 
+---
+
+
+
 ### 4. First migration
 
 Create:
@@ -125,6 +138,9 @@ CREATE TABLE incidents (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ```
+
+---
+
 
 ### 5. Second migration
 
@@ -152,6 +168,8 @@ Therefore:
 ```
 001 must execute before 002
 ```
+
+---
 
 
 ### 6. Third migration — indexes
@@ -191,6 +209,9 @@ Indexes will become very important when the incident table becomes large.
 
 For now we're only establishing migration discipline.
 
+---
+
+
 ### 7. Important problem: your database already has these tables
 
 You already created:
@@ -211,6 +232,8 @@ ERROR: relation "incidents" already exists
 We need to decide how to handle this.
 
 Because this is a learning/development database, I recommend resetting it.
+
+---
 
 ### 8. Reset the development database
 
@@ -239,11 +262,16 @@ Exit:
 \q
 ```
 
+---
+
+
 ### 9. But migrations need a migration table
 
 Our application needs to remember:
 
+```
 Which migrations have already executed?
+```
 
 Create a special table:
 ```
@@ -261,6 +289,9 @@ version
 003_add_incident_indexes
 ```
 The database now has its own schema history.
+
+---
+
 
 ### 10. We should automate this
 
@@ -290,7 +321,13 @@ Find pending migrations
 Execute pending migrations
        ↓
 Record successful migration
+
+
 ```
+
+---
+
+
 ### 11. Install migration dependency
 
 We're going to keep the implementation simple and use Node's filesystem APIs rather than introducing a large migration framework.
@@ -306,6 +343,9 @@ So we don't need another package.
 This is intentional.
 
 I want you to understand how migrations actually work.
+
+---
+
 
 ### 12. Create migration runner
 
@@ -429,6 +469,10 @@ runMigrations().catch((error) => {
   process.exit(1);
 });
 ```
+
+---
+
+
 ### 13. Why use a transaction for each migration?
 
 This is extremely important.
@@ -497,6 +541,8 @@ COMMIT ROLLBACK
 ```
 This is the same transaction principle we learned in Lecture 9.
 
+---
+
 
 ### 14. Add npm script
 
@@ -521,6 +567,10 @@ Your scripts should now look approximately like:
   }
 }
 ```
+
+---
+
+
 ### 15. Run migrations
 
 Make sure PostgreSQL is running:
@@ -543,6 +593,9 @@ Running migration: 003_add_incident_indexes
 Migration completed: 003_add_incident_indexes
 ```
 Database migrations completed.
+
+---
+
 
 ### 16. Verify the database
 
@@ -572,6 +625,10 @@ Expected:
 002_create_incident_events
 003_add_incident_indexes
 ```
+
+---
+
+
 ### 17. Test idempotency
 
 This is one of the most important tests.
@@ -605,6 +662,9 @@ The migration runner knows they already executed.
 
 This property is called `idempotent migration execution`.
 
+---
+
+
 ### 18. Now add Migration 004
 
 Let's prove the system actually works.
@@ -636,6 +696,9 @@ You should now see:
 acknowledged_at
 ```
 
+---
+
+
 ### 19. This is the workflow we want
 
 From now on, never manually modify the production schema.
@@ -658,12 +721,17 @@ Run migrations
 Database updated
 ```
 Example:
-
+```
 005_add_incident_resolved_at.sql
 006_add_incident_priority.sql
 007_add_incident_source.sql
+```
 
 The migration history becomes part of the codebase.
+
+
+---
+
 
 ### 20. One important production rule
 
@@ -690,6 +758,9 @@ Why?
 Because another environment may already have executed the old migration.
 
 Migration history should be treated as immutable.
+
+---
+
 
 ### 21. Current architecture
 
@@ -726,6 +797,9 @@ Production Intelligence Platform
 ```
 
 We're starting to build something that resembles a real backend rather than just an Express CRUD application.
+
+---
+
 
 ### 22. Your checkpoint — DO NOT SKIP
 
@@ -770,3 +844,6 @@ And:
 ```
 \d incidents
 ```
+
+---
+---
