@@ -91,6 +91,7 @@ Protects business logic.
 #### Database
 
 Protects `data integrity regardless of where the write comes from.`
+
 ---
 
 ### 3. Constraint types we need
@@ -107,7 +108,9 @@ DEFAULT
 We've already used some of these.
 
 Today we're going to understand them properly and add the missing constraints.
+
 ---
+
 ### 4. NOT NULL
 
 We already have:
@@ -134,6 +137,7 @@ PostgreSQL rejects it.
 Why?
 
 Because an incident without a service doesn't make sense.
+
 ---
 ### 5. PRIMARY KEY
 
@@ -152,6 +156,7 @@ incident A → id = abc
 incident B → id = abc
 ```
 PostgreSQL prevents it.
+
 ---
 ### 6. Foreign key
 
@@ -273,6 +278,7 @@ critical
 only.
 
 PostgreSQL provides `CHECK`.
+
 ---
 
 ### 9. CHECK constraint
@@ -303,6 +309,7 @@ but:
 severity = banana
 ```
 ❌
+
 ---
 
 ### 10. Status needs a constraint too
@@ -323,6 +330,7 @@ status = "whatever"
 ```
 That's dangerous.
 We should enforce the same domain values at the database level.
+
 ---
 ### 11. Create migration 005
 
@@ -667,6 +675,7 @@ and:
 banana
 ```
 are different problems.
+
 ---
 ### 21. Application validation vs database constraints
 
@@ -745,6 +754,7 @@ Business logic
 Database constraint
 ```
 There is some overlap, but this distinction is extremely useful.
+
 ---
 
 ### 23. Our architecture now
