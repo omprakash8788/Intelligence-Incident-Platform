@@ -653,9 +653,8 @@ PostgreSQL's query planner chooses a plan based on estimated cost.
 ### 23. EXPLAIN ANALYZE
 
 Now:
-
-EXPLAIN ANALYZE
 ```
+EXPLAIN ANALYZE
 SELECT *
 FROM incidents
 WHERE service = 'payment-service';
