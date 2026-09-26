@@ -89,6 +89,107 @@ describe("Incident API", () => {
       .toBeDefined();
   });
 
+  it("should list incidents", async () => {
+
+    const response =
+      await request(app)
+        .get("/incidents")
+        .query({
+          page: 1,
+          limit: 5
+        });
+
+    expect(response.status)
+      .toBe(200);
+
+    expect(response.body.success)
+      .toBe(true);
+
+    expect(
+      Array.isArray(response.body.data)
+    ).toBe(true);
+
+    expect(response.body.meta)
+      .toEqual(
+        expect.objectContaining({
+          page: 1,
+          limit: 5
+        })
+      );
+  });
+
+
+  it("should filter incidents by service", async () => {
+
+    const response =
+      await request(app)
+        .get("/incidents")
+        .query({
+          service: "payment-service",
+          limit: 10
+        });
+
+    expect(response.status)
+      .toBe(200);
+
+    expect(response.body.success)
+      .toBe(true);
+
+    for (
+      const incident
+      of response.body.data
+    ) {
+      expect(incident.service)
+        .toBe("payment-service");
+    }
+  });
+
+
+  it("should reject an invalid severity", async () => {
+
+    const response =
+      await request(app)
+        .get("/incidents")
+        .query({
+          severity: "banana"
+        });
+
+    expect(response.status)
+      .toBe(400);
+
+    expect(response.body)
+      .toEqual({
+        success: false,
+        error: {
+          code: "INVALID_SEVERITY",
+          message: "Invalid severity"
+        }
+      });
+  });
+
+  it("should reject an invalid limit", async () => {
+
+    const response =
+      await request(app)
+        .get("/incidents")
+        .query({
+          limit: 101
+        });
+
+    expect(response.status)
+      .toBe(400);
+
+    expect(response.body)
+      .toEqual({
+        success: false,
+        error: {
+          code: "INVALID_LIMIT",
+          message:
+            "limit must be between 1 and 100"
+        }
+      });
+  });
+
   it("should return 404 for missing incident", async () => {
     const response = await request(app)
       .get(

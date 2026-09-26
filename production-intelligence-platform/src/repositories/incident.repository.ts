@@ -6,6 +6,7 @@ import type {
   IncidentQuery,
   IncidentRepositoryContract
 } from "./incident.repository.interface.js";
+import { PaginatedResult } from "../domain/pagination.js";
 
 export class IncidentRepository
   implements IncidentRepositoryContract {
@@ -49,7 +50,7 @@ export class IncidentRepository
       status: result.rows[0].status,
       createdAt: result.rows[0].created_at,
       updatedAt: result.rows[0].updated_at,
-      acknowledgedAt:null
+      acknowledgedAt: null
     };
   }
 
@@ -84,7 +85,7 @@ export class IncidentRepository
       status: row.status,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      acknowledgedAt:row.acknowledged_at
+      acknowledgedAt: row.acknowledged_at
     };
   }
 
@@ -130,13 +131,14 @@ export class IncidentRepository
       status: row.status,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      acknowledgedAt:row.acknowledged_at
+      acknowledgedAt: row.acknowledged_at
     };
   }
 
+//  Type issue 
   async findMany(
     query: IncidentQuery
-  ): Promise<Incident[]> {
+  ): Promise<PaginatedResult<Incident>> {
 
     const {
       page,
@@ -150,6 +152,10 @@ export class IncidentRepository
     const values: unknown[] = [];
 
     let parameterIndex = 1;
+
+    const queryLimit = limit + 1;
+
+
 
     if (service) {
       conditions.push(
@@ -180,11 +186,14 @@ export class IncidentRepository
 
     const offset = (page - 1) * limit;
 
-    values.push(limit);
+    values.push(queryLimit);
     const limitParameter = parameterIndex++;
 
     values.push(offset);
     const offsetParameter = parameterIndex++;
+
+
+
 
     const whereClause =
       conditions.length > 0
@@ -212,14 +221,23 @@ export class IncidentRepository
       values
     );
 
-    return result.rows.map((row) => ({
-      id: row.id,
-      service: row.service,
-      severity: row.severity,
-      status: row.status,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      acknowledgedAt: row.acknowledged_at
-    }));
+    const hasNextPage =
+      result.rows.length > limit;
+
+    const rows =
+      result.rows.slice(0, limit);
+
+    return {
+      items: rows.map((row) => ({
+        id: row.id,
+        service: row.service,
+        severity: row.severity,
+        status: row.status,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        acknowledgedAt: row.acknowledged_at
+      })),
+      hasNextPage
+    };
   }
 }

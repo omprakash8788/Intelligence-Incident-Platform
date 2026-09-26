@@ -16,6 +16,7 @@ import type {
 
 
 import type { IncidentQuery } from "../domain/incident-query.js";
+import { PaginatedResult } from "../domain/pagination.js";
 
 interface CreateIncidentInput {
   service: string;
@@ -42,7 +43,7 @@ export class IncidentService {
 
   async getIncidents(
   query: IncidentQuery
-): Promise<Incident[]> {
+): Promise<PaginatedResult<Incident>> {
 
   return this.incidentRepository.findMany(
     query
