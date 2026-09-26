@@ -7,6 +7,14 @@ export interface CreateIncidentData {
   status: IncidentStatus;
 }
 
+export interface IncidentQuery {
+  page: number;
+  limit: number;
+  service?: string;
+  severity?: IncidentSeverity;
+  status?: IncidentStatus;
+}
+
 export interface IncidentRepositoryContract {
   create(data: CreateIncidentData): Promise<Incident>;
 
@@ -16,5 +24,12 @@ export interface IncidentRepositoryContract {
     client: PoolClient,
     data: CreateIncidentData
   ): Promise<Incident>;
+   
+  findMany(
+    query: IncidentQuery
+  ): Promise<Incident[]>;
+
 }
+
+
 

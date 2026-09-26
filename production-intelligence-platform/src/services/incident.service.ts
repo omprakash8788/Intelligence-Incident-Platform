@@ -14,6 +14,9 @@ import type {
   IncidentEventRepositoryContract
 } from "../repositories/incident-event.repository.interface.js";
 
+
+import type { IncidentQuery } from "../domain/incident-query.js";
+
 interface CreateIncidentInput {
   service: string;
   severity: IncidentSeverity;
@@ -36,6 +39,15 @@ export class IncidentService {
       status: "detected"
     });
   }
+
+  async getIncidents(
+  query: IncidentQuery
+): Promise<Incident[]> {
+
+  return this.incidentRepository.findMany(
+    query
+  );
+}
 
   async getIncidentById(
     id: string

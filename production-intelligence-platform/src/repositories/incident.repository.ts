@@ -3,6 +3,7 @@ import { pool } from "../database/pool.js";
 import type { Incident } from "../domain/incident.js";
 import type {
   CreateIncidentData,
+  IncidentQuery,
   IncidentRepositoryContract
 } from "./incident.repository.interface.js";
 
@@ -47,7 +48,8 @@ export class IncidentRepository
       severity: result.rows[0].severity,
       status: result.rows[0].status,
       createdAt: result.rows[0].created_at,
-      updatedAt: result.rows[0].updated_at
+      updatedAt: result.rows[0].updated_at,
+      acknowledgedAt:null
     };
   }
 
@@ -81,7 +83,8 @@ export class IncidentRepository
       severity: row.severity,
       status: row.status,
       createdAt: row.created_at,
-      updatedAt: row.updated_at
+      updatedAt: row.updated_at,
+      acknowledgedAt:row.acknowledged_at
     };
   }
 
@@ -126,7 +129,97 @@ export class IncidentRepository
       severity: row.severity,
       status: row.status,
       createdAt: row.created_at,
-      updatedAt: row.updated_at
+      updatedAt: row.updated_at,
+      acknowledgedAt:row.acknowledged_at
     };
+  }
+
+  async findMany(
+    query: IncidentQuery
+  ): Promise<Incident[]> {
+
+    const {
+      page,
+      limit,
+      service,
+      severity,
+      status
+    } = query;
+
+    const conditions: string[] = [];
+    const values: unknown[] = [];
+
+    let parameterIndex = 1;
+
+    if (service) {
+      conditions.push(
+        `service = $${parameterIndex}`
+      );
+
+      values.push(service);
+      parameterIndex++;
+    }
+
+    if (severity) {
+      conditions.push(
+        `severity = $${parameterIndex}`
+      );
+
+      values.push(severity);
+      parameterIndex++;
+    }
+
+    if (status) {
+      conditions.push(
+        `status = $${parameterIndex}`
+      );
+
+      values.push(status);
+      parameterIndex++;
+    }
+
+    const offset = (page - 1) * limit;
+
+    values.push(limit);
+    const limitParameter = parameterIndex++;
+
+    values.push(offset);
+    const offsetParameter = parameterIndex++;
+
+    const whereClause =
+      conditions.length > 0
+        ? `WHERE ${conditions.join(" AND ")}`
+        : "";
+
+    const sql = `
+    SELECT
+      id,
+      service,
+      severity,
+      status,
+      created_at,
+      updated_at,
+      acknowledged_at
+    FROM incidents
+    ${whereClause}
+    ORDER BY created_at DESC, id DESC
+    LIMIT $${limitParameter}
+    OFFSET $${offsetParameter}
+  `;
+
+    const result = await pool.query(
+      sql,
+      values
+    );
+
+    return result.rows.map((row) => ({
+      id: row.id,
+      service: row.service,
+      severity: row.severity,
+      status: row.status,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      acknowledgedAt: row.acknowledged_at
+    }));
   }
 }
