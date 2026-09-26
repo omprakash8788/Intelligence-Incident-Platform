@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "../errors/AppError.js";
+import type { ApiErrorResponse } from "../types/api-response.js";
+
 
 export const errorMiddleware = (
   err: unknown,
@@ -7,15 +9,27 @@ export const errorMiddleware = (
   res: Response,
   _next: NextFunction
 ) => {
+  // if (err instanceof AppError) {
+  //   res.status(err.statusCode).json({
+  //     success: false,
+  //     error: {
+  //       code: err.code,
+  //       message: err.message
+  //     }
+  //   });
   if (err instanceof AppError) {
-    res.status(err.statusCode).json({
+
+    const response: ApiErrorResponse = {
       success: false,
       error: {
         code: err.code,
         message: err.message
       }
-    });
+    };
 
+    res
+      .status(err.statusCode)
+      .json(response);
     return;
   }
 

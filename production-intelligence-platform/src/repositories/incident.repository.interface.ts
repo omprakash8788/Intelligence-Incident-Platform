@@ -1,5 +1,6 @@
 import type { Incident, IncidentSeverity, IncidentStatus } from "../domain/incident.js";
 import type { PoolClient } from "pg";
+import type { PaginatedResult } from "../domain/pagination.js";
 
 export interface CreateIncidentData {
   service: string;
@@ -27,7 +28,7 @@ export interface IncidentRepositoryContract {
    
   findMany(
     query: IncidentQuery
-  ): Promise<Incident[]>;
+  ): Promise<PaginatedResult<Incident>>;
 
 }
 

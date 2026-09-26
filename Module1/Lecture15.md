@@ -390,7 +390,10 @@ import type { PaginatedResult } from "../domain/pagination.js";
 
 ### 12. Update controller
 
+`src/controllers/incident.controller.ts`
+
 Our controller currently returns:
+
 ```
 res.status(200).json({
   success: true,
@@ -569,6 +572,15 @@ return sendSuccess(
 ### 17. List response helper
 
 Add:
+
+`add inside utils/api-response.ts`
+
+```
+utils/api-response.ts
+```
+
+### 
+
 ```
 export const sendListSuccess = <T>(
   res: Response,
@@ -588,6 +600,13 @@ export const sendListSuccess = <T>(
 ```
 Then:
 
+
+### Add below code inside 
+
+`controllers/incident-controller.ts`
+
+##### Write inside `export const getIncidents` Function
+
 ```
 return sendListSuccess(
   res,
@@ -599,6 +618,23 @@ return sendListSuccess(
   }
 );
 ```
+
+After Adding res look like this 
+
+```
+ return sendListSuccess(
+      res,
+      incidents.items,
+      {
+        page,
+        limit,
+        hasNextPage: incidents.hasNextPage
+      }
+    );
+    
+```
+
+
 Now response formatting is centralized.
 
 ---

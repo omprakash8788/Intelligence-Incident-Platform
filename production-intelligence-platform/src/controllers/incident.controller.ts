@@ -52,6 +52,7 @@ import {
 } from "express";
 
 import { incidentService } from "../container.js";
+import { sendListSuccess } from "../utils/api-response.js";
 
 export const createIncident = async (
   req: Request,
@@ -111,10 +112,24 @@ export const getIncidents = async (
             : undefined
       });
 
-    res.status(200).json({
-      success: true,
-      data: incidents
-    });
+    // res.status(200).json({
+    //   success: true,
+    //   data: incidents.items,
+    //   meta: {
+    //     page,
+    //     limit,
+    //     hasNextPage: incidents.hasNextPage
+    //   }
+    // });
+    return sendListSuccess(
+      res,
+      incidents.items,
+      {
+        page,
+        limit,
+        hasNextPage: incidents.hasNextPage
+      }
+    );
 
   } catch (error) {
     next(error);
