@@ -19,4 +19,5 @@ export interface Incident {
   status: IncidentStatus;
   createdAt: Date;
   updatedAt: Date;
+  acknowledgedAt: Date | null;
 }
