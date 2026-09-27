@@ -4,11 +4,17 @@ import { errorMiddleware } from './middleware/error.middleware.js';
 import { notFoundMiddleware } from './middleware/not-found.middleware.js';
 import incidentRoutes from "./routes/incident.routes.js";
 import { requestLoggingMiddleware } from './middleware/request-logging.middleware.js';
+import {
+  requestContextMiddleware
+} from "./middleware/request-context.middleware.js";
+
 
 
 const app = express();
 
 app.use(express.json());
+
+app.use(requestContextMiddleware);
 
 app.use(requestLoggingMiddleware);
 

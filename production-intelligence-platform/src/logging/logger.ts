@@ -1,5 +1,7 @@
 import type { LogLevel } from "./log-level.js";
-import type { RequestContext } from "./request-context.js";
+import {
+  getRequestId
+} from "./request-context.js";
 
 export interface LogMetadata {
   requestId?: string;
@@ -24,17 +26,40 @@ const writeLog = (
   message: string,
   metadata?: LogMetadata
 ) => {
+
+  const requestId =
+    getRequestId();
+
+  const combinedMetadata: LogMetadata = {
+    ...(requestId
+      ? { requestId }
+      : {}),
+    ...(metadata ?? {})
+  };
+
   const entry: LogEntry = {
-    timestamp: new Date().toISOString(),
+    timestamp:
+      new Date().toISOString(),
+
     level,
-    service: APPLICATION_NAME,
+
+    service:
+      APPLICATION_NAME,
+
     message,
-    ...(metadata
-      ? { metadata }
+
+    ...(Object.keys(
+      combinedMetadata
+    ).length > 0
+      ? {
+          metadata:
+            combinedMetadata
+        }
       : {})
   };
 
-  const serialized = JSON.stringify(entry);
+  const serialized =
+    JSON.stringify(entry);
 
   if (level === "error") {
     console.error(serialized);
@@ -50,6 +75,7 @@ const writeLog = (
 };
 
 export const logger = {
+
   debug(
     message: string,
     metadata?: LogMetadata
@@ -94,4 +120,3 @@ export const logger = {
     );
   }
 };
-

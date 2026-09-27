@@ -7,6 +7,10 @@ import {
   afterEach
 } from "vitest";
 
+import {
+  runWithRequestContext
+} from "../src/logging/request-context.js";
+
 import { logger } from "../src/logging/logger.js";
 
 describe("logger", () => {
@@ -31,6 +35,42 @@ describe("logger", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
+
+  it(
+  "should automatically include request ID",
+  () => {
+
+    runWithRequestContext(
+      {
+        requestId:
+          "request-456"
+      },
+      () => {
+
+        logger.info(
+          "Request scoped log"
+        );
+      }
+    );
+
+    expect(
+      console.log
+    ).toHaveBeenCalledTimes(1);
+
+    const call =
+      vi.mocked(console.log)
+        .mock.calls[0][0];
+
+    const entry =
+      JSON.parse(String(call));
+
+    expect(
+      entry.metadata.requestId
+    ).toBe(
+      "request-456"
+    );
+  }
+);
 
   it("should write a structured info log", () => {
 
