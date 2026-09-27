@@ -2,7 +2,7 @@ import type {
   Incident,
   IncidentSeverity
 } from "../domain/incident.js";
-
+import { logger } from "../logging/logger.js";
 import { NotFoundError } from "../errors/NotFoundError.js";
 import { withTransaction } from "../database/transaction.js";
 
@@ -90,6 +90,16 @@ export class IncidentService {
           eventType: "INCIDENT_CREATED"
         }
       );
+
+        logger.info(
+      "Incident created",
+      {
+        incidentId: incident.id,
+        service: incident.service,
+        severity: incident.severity,
+        status: incident.status
+      }
+    );
 
       return incident;
     });
