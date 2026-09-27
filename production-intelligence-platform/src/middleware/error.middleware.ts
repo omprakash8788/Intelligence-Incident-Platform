@@ -1,23 +1,32 @@
-import { Request, Response, NextFunction } from "express";
-import { AppError } from "../errors/AppError.js";
-import type { ApiErrorResponse } from "../types/api-response.js";
+import {
+  Request,
+  Response,
+  NextFunction
+} from "express";
 
+import { AppError } from "../errors/AppError.js";
+import { logger } from "../logging/logger.js";
+import type { ApiErrorResponse } from "../types/api-response.js";
 
 export const errorMiddleware = (
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction
 ) => {
-  // if (err instanceof AppError) {
-  //   res.status(err.statusCode).json({
-  //     success: false,
-  //     error: {
-  //       code: err.code,
-  //       message: err.message
-  //     }
-  //   });
+
   if (err instanceof AppError) {
+
+    logger.warn(
+      "Application error",
+      {
+        method: req.method,
+        path: req.originalUrl,
+        code: err.code,
+        statusCode: err.statusCode,
+        message: err.message
+      }
+    );
 
     const response: ApiErrorResponse = {
       success: false,
@@ -30,10 +39,21 @@ export const errorMiddleware = (
     res
       .status(err.statusCode)
       .json(response);
+
     return;
   }
 
-  console.error(err);
+  logger.error(
+    "Unhandled application error",
+    {
+      method: req.method,
+      path: req.originalUrl,
+      error:
+        err instanceof Error
+          ? err.message
+          : String(err)
+    }
+  );
 
   res.status(500).json({
     success: false,
