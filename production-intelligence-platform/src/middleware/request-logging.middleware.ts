@@ -6,6 +6,9 @@ import {
 
 import { logger } from "../logging/logger.js";
 
+
+
+
 export const requestLoggingMiddleware = (
   req: Request,
   res: Response,
@@ -13,6 +16,8 @@ export const requestLoggingMiddleware = (
 ) => {
 
   const startedAt = Date.now();
+
+
 
   res.on("finish", () => {
 
