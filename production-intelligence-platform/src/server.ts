@@ -1,14 +1,41 @@
 import app from "./app.js";
 import { env } from "./config/env.js";
 import { logger } from "./logging/logger.js";
+import { shutdown } from "./server/shutdown.js";
 
-app.listen(env.port, () => {
-  // console.log(`Server running on port ${env.port}`);
-  logger.info(
-    "Server started",{
-      port:env.port,
-       environment: env.nodeEnv
+const server =
+  app.listen(
+    env.port,
+    () => {
+
+      logger.info(
+        "Server started",
+        {
+          port: env.port,
+          environment:
+            env.nodeEnv
+        }
+      );
     }
-  )
-});
+  );
+
+process.on(
+  "SIGINT",
+  () => {
+    void shutdown(
+      server,
+      "SIGINT"
+    );
+  }
+);
+
+process.on(
+  "SIGTERM",
+  () => {
+    void shutdown(
+      server,
+      "SIGTERM"
+    );
+  }
+);
 
