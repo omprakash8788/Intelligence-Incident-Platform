@@ -1,8 +1,27 @@
+# services:
+#   postgres:
+#     image: postgres:18
+#     container_name: production-intelligence-postgres
+#     restart: unless-stopped
+
+#     environment:
+#       POSTGRES_DB: production_intelligence
+#       POSTGRES_USER: postgres
+#       POSTGRES_PASSWORD: Ohm12345@
+
+#     ports:
+#       - "5432:5432"
+
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+
+# volumes:
+#   postgres_data:
+
 services:
   postgres:
-    image: postgres:18
     container_name: production-intelligence-postgres
-    restart: unless-stopped
+    image: postgres:18
 
     environment:
       POSTGRES_DB: production_intelligence
@@ -12,8 +31,11 @@ services:
     ports:
       - "5432:5432"
 
+    restart: unless-stopped
+
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
 
 volumes:
   postgres_data:
+    name: production-intelligence-platform_postgres_data

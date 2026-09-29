@@ -1,8 +1,19 @@
 import { Router } from "express";
-import { healthController } from "../controllers/health.controller.js";
+import { healthController, livenessController, readinessController } from "../controllers/health.controller.js";
 // import { NotFoundError } from "../errors/NotFoundError.js";
 
 const router = Router();
+
+
+router.get(
+  "/live",
+  livenessController
+);
+
+router.get(
+  "/ready",
+  readinessController
+);
 
 router.get("/", healthController);
 

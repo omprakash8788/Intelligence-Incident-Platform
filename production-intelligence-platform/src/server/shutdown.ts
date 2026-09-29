@@ -3,6 +3,11 @@ import type { Server } from "node:http";
 import { pool } from "../database/pool.js";
 import { logger } from "../logging/logger.js";
 
+import {
+  markApplicationShuttingDown,
+  markApplicationStopped
+} from "./lifecycle.js";
+
 let isShuttingDown = false;
 
 export const shutdown = async (
@@ -22,6 +27,8 @@ export const shutdown = async (
   }
 
   isShuttingDown = true;
+
+  markApplicationShuttingDown();
 
   logger.info(
     "Graceful shutdown started",
@@ -58,6 +65,8 @@ export const shutdown = async (
     logger.info(
       "PostgreSQL connection pool closed"
     );
+
+     markApplicationStopped();
 
     logger.info(
       "Graceful shutdown completed"
