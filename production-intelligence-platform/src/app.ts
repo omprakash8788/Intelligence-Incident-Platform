@@ -8,11 +8,22 @@ import {
   requestContextMiddleware
 } from "./middleware/request-context.middleware.js";
 
-
+import {
+  securityMiddleware
+} from "./middleware/security.middleware.js";
 
 const app = express();
 
-app.use(express.json());
+app.use(
+  securityMiddleware
+);
+
+// app.use(express.json());
+app.use(
+  express.json({
+    limit: "100kb"
+  })
+);
 
 app.use(requestContextMiddleware);
 

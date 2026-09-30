@@ -15,6 +15,78 @@ export const errorMiddleware = (
   _next: NextFunction
 ) => {
 
+  if (
+    err &&
+    typeof err === "object" &&
+    "type" in err &&
+    err.type ===
+      "entity.too.large"
+  ) {
+
+    logger.warn(
+      "Request payload too large",
+      {
+        method:
+          req.method,
+        path:
+          req.originalUrl
+      }
+    );
+
+    const response:
+      ApiErrorResponse = {
+        success: false,
+        error: {
+          code:
+            "PAYLOAD_TOO_LARGE",
+          message:
+            "Request payload is too large"
+        }
+      };
+
+    res
+      .status(413)
+      .json(response);
+
+    return;
+  }
+
+  if (
+  err &&
+  typeof err === "object" &&
+  "type" in err &&
+  err.type ===
+    "entity.parse.failed"
+) {
+
+  logger.warn(
+    "Invalid JSON payload",
+    {
+      method:
+        req.method,
+      path:
+        req.originalUrl
+    }
+  );
+
+  const response:
+    ApiErrorResponse = {
+      success: false,
+      error: {
+        code:
+          "INVALID_JSON",
+        message:
+          "Invalid JSON payload"
+      }
+    };
+
+  res
+    .status(400)
+    .json(response);
+
+  return;
+}
+
   if (err instanceof AppError) {
 
     logger.warn(

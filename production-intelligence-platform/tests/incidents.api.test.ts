@@ -118,6 +118,30 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+
+it(
+  "should safely handle SQL-like service input",
+  async () => {
+
+    const maliciousValue =
+      "payment-service' OR '1'='1";
+
+    const response =
+      await request(app)
+        .get("/incidents")
+        .query({
+          service:
+            maliciousValue
+        });
+
+    expect(response.status)
+      .toBe(200);
+
+    expect(response.body.success)
+      .toBe(true);
+  }
+);
+
   it("should list incidents", async () => {
 
     const response =
