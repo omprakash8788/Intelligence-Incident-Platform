@@ -12,6 +12,11 @@ import {
   securityMiddleware
 } from "./middleware/security.middleware.js";
 
+
+import {
+  apiRateLimiter
+} from "./config/rate-limit.js";
+
 const app = express();
 
 app.use(
@@ -29,12 +34,18 @@ app.use(requestContextMiddleware);
 
 app.use(requestLoggingMiddleware);
 
+// app.use(
+//   apiRateLimiter
+// );
+
 app.use("/health",  healthRoutes)
-app.use("/incidents", incidentRoutes);
+app.use("/incidents", apiRateLimiter ,incidentRoutes);
 
 app.use(notFoundMiddleware)
 
 app.use(errorMiddleware)
 
 export default app;
+
+
 
