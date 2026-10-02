@@ -18,10 +18,37 @@
 # volumes:
 #   postgres_data:
 
+# services:
+#   postgres:
+#     container_name: production-intelligence-postgres
+#     image: postgres:18
+
+#     environment:
+#       POSTGRES_DB: production_intelligence
+#       POSTGRES_USER: postgres
+#       POSTGRES_PASSWORD: Ohm12345@
+
+#     ports:
+#       - "5432:5432"
+
+#     restart: unless-stopped
+
+#     volumes:
+#       - postgres_data:/var/lib/postgresql
+
+# volumes:
+#   postgres_data:
+#     name: production-intelligence-platform_postgres_data
+
+
+
 services:
+
   postgres:
-    container_name: production-intelligence-postgres
     image: postgres:18
+    container_name: production-intelligence-postgres
+
+    restart: unless-stopped
 
     environment:
       POSTGRES_DB: production_intelligence
@@ -31,11 +58,71 @@ services:
     ports:
       - "5432:5432"
 
-    restart: unless-stopped
-
     volumes:
       - postgres_data:/var/lib/postgresql
 
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U postgres -d production_intelligence"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    networks:
+      - app-network
+
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: production-intelligence-api
+
+    restart: unless-stopped
+
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DATABASE: production_intelligence
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Ohm12345@
+
+    ports:
+      - "3000:3000"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health/live').then(r => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1))"
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    networks:
+      - app-network
+
+
+networks:
+  app-network:
+    driver: bridge
+
+
 volumes:
   postgres_data:
-    name: production-intelligence-platform_postgres_data
