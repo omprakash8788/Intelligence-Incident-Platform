@@ -8,15 +8,15 @@ import {
 
 const server =
   app.listen(
-    env.port,
+    env.app.port,
     () => {
        markApplicationReady();
       logger.info(
         "Server started",
         {
-          port: env.port,
+          port: env.app.port,
           environment:
-            env.nodeEnv
+            env.app.nodeEnv
         }
       );
     }
