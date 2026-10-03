@@ -4,6 +4,10 @@ import { pool } from "../database/pool.js";
 import { logger } from "../logging/logger.js";
 
 import {
+  closeRedis
+} from "../redis/lifecycle.js";
+
+import {
   markApplicationShuttingDown,
   markApplicationStopped
 } from "./lifecycle.js";
@@ -65,6 +69,8 @@ export const shutdown = async (
     logger.info(
       "PostgreSQL connection pool closed"
     );
+    
+    await closeRedis();
 
      markApplicationStopped();
 
