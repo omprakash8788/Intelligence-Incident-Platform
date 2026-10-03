@@ -171,6 +171,18 @@ const postgresPassword =
     "POSTGRES_PASSWORD"
   );
 
+  const redisHost =
+  parseRequiredString(
+    "REDIS_HOST"
+  );
+
+const redisPort =
+  parsePositiveInteger(
+    "REDIS_PORT",
+    process.env.REDIS_PORT ??
+      "6379"
+  );
+
 export const env: AppConfig = {
   app: {
     nodeEnv,
@@ -188,6 +200,13 @@ export const env: AppConfig = {
       postgresUser,
     password:
       postgresPassword
+  },
+
+   redis: {
+    host:
+      redisHost,
+    port:
+      redisPort
   },
 
   security: {

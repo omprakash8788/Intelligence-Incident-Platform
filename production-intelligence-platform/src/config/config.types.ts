@@ -16,6 +16,11 @@ export interface PostgresConfig {
   password: string;
 }
 
+export interface RedisConfig {
+  host: string;
+  port: number;
+}
+
 export interface SecurityConfig {
   requestBodyLimit: string;
 }
@@ -23,6 +28,8 @@ export interface SecurityConfig {
 export interface AppConfig {
   app: ApplicationConfig;
   postgres: PostgresConfig;
+
+  redis: RedisConfig;
   security: SecurityConfig;
 }
 
