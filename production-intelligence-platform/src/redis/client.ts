@@ -1,4 +1,4 @@
-import {Redis} from "ioredis";
+import { Redis } from "ioredis";
 
 import { env } from "../config/env.js";
 
@@ -10,8 +10,26 @@ export const redis =
     port:
       env.redis.port,
 
+
+
     lazyConnect: true,
 
-    maxRetriesPerRequest: null
+    connectTimeout:
+      env.redis.connectTimeoutMs,
+
+    maxRetriesPerRequest: null,
+
+    retryStrategy: (
+      times: number
+    ): number => {
+      const delay =
+        Math.min(
+          times * 500,
+          5000
+        );
+
+      return delay;
+    }
+
   });
 

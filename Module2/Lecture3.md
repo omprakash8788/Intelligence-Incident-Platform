@@ -1399,17 +1399,45 @@ import {
   redis
 } from "./client.js";
 
+const REDIS_HEALTH_TIMEOUT_MS = 2000;
+
 export const checkRedisHealth =
   async (): Promise<boolean> => {
+
     try {
+
+      const pingPromise =
+        redis.ping();
+
+      const timeoutPromise =
+        new Promise<never>(
+          (_, reject) => {
+            setTimeout(
+              () => {
+                reject(
+                  new Error(
+                    "Redis health check timed out"
+                  )
+                );
+              },
+              REDIS_HEALTH_TIMEOUT_MS
+            );
+          }
+        );
+
       const result =
-        await redis.ping();
+        await Promise.race([
+          pingPromise,
+          timeoutPromise
+        ]);
 
       return result === "PONG";
+
     } catch {
       return false;
     }
   };
+
 ```
 
 This gives us:
@@ -1479,129 +1507,168 @@ Update the readiness logic so Redis is also checked.
 The relevant complete implementation should follow this pattern:
 
 ```
+
 import type {
   Request,
-  Response
+  Response,
+  NextFunction
 } from "express";
 
 import {
-  getApplicationState
-} from "../server/lifecycle.js";
-
-import {
-  checkDatabaseHealth
+  checkDatabaseConnection
 } from "../database/health.js";
 
 import {
   checkRedisHealth
 } from "../redis/health.js";
 
-export const livenessController =
-  (
-    _req: Request,
-    res: Response
-  ): void => {
-    res.status(200).json({
-      success: true,
-      data: {
-        status: "alive"
+import {
+  getApplicationState
+} from "../server/lifecycle.js";
+
+
+export const livenessController = (
+  _req: Request,
+  res: Response
+): void => {
+
+  const state =
+    getApplicationState();
+
+  if (
+    state === "stopped"
+  ) {
+    res.status(503).json({
+      status: "unavailable",
+      state
+    });
+
+    return;
+  }
+
+  res.status(200).json({
+    status: "ok",
+    state
+  });
+};
+
+
+export const readinessController = async (
+  _req: Request,
+  res: Response
+): Promise<void> => {
+
+  const state =
+    getApplicationState();
+
+  if (
+    state !== "ready"
+  ) {
+    res.status(503).json({
+      success: false,
+      error: {
+        code:
+          "SERVICE_NOT_READY",
+        message:
+          "Service is not ready"
       }
     });
-  };
 
-export const readinessController =
-  async (
-    _req: Request,
-    res: Response
-  ): Promise<void> => {
-    const state =
-      getApplicationState();
+    return;
+  }
 
-    if (
-      state !== "ready"
-    ) {
-      res.status(503).json({
-        success: false,
-        error: {
-          code:
-            "SERVICE_NOT_READY",
-          message:
-            "Service is not ready"
-        }
-      });
+  const [
+    databaseHealthy,
+    redisHealthy
+  ] = await Promise.all([
+    checkDatabaseConnection(),
+    checkRedisHealth()
+  ]);
 
-      return;
+  if (
+    !databaseHealthy ||
+    !redisHealthy
+  ) {
+    res.status(503).json({
+      success: false,
+      error: {
+        code:
+          "DEPENDENCY_NOT_READY",
+        message:
+          "One or more dependencies are unavailable"
+      }
+    });
+
+    return;
+  }
+
+  res.status(200).json({
+    status: "ready",
+    state,
+    dependencies: {
+      postgres: "connected",
+      redis: "connected"
     }
+  });
+};
+
+
+export const healthController = async (
+  _req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+
+  try {
 
     const [
       databaseHealthy,
       redisHealthy
     ] = await Promise.all([
-      checkDatabaseHealth(),
-      checkRedisHealth()
-    ]);
-
-    if (
-      !databaseHealthy ||
-      !redisHealthy
-    ) {
-      res.status(503).json({
-        success: false,
-        error: {
-          code:
-            "DEPENDENCY_NOT_READY",
-          message:
-            "One or more dependencies are unavailable"
-        }
-      });
-
-      return;
-    }
-
-    res.status(200).json({
-      success: true,
-      data: {
-        status: "ready"
-      }
-    });
-  };
-
-export const healthController =
-  async (
-    _req: Request,
-    res: Response
-  ): Promise<void> => {
-    const state =
-      getApplicationState();
-
-    const [
-      databaseHealthy,
-      redisHealthy
-    ] = await Promise.all([
-      checkDatabaseHealth(),
+      checkDatabaseConnection(),
       checkRedisHealth()
     ]);
 
     const healthy =
-      state === "ready" &&
       databaseHealthy &&
       redisHealthy;
 
-    res
-      .status(
-        healthy
-          ? 200
-          : 503
-      )
-      .json({
-        success: healthy,
-        data: {
-          status: healthy
-            ? "healthy"
-            : "unhealthy"
+    if (!healthy) {
+      res.status(503).json({
+        status: "unhealthy",
+        service:
+          "production-intelligence-platform",
+        dependencies: {
+          postgres:
+            databaseHealthy
+              ? "connected"
+              : "unavailable",
+
+          redis:
+            redisHealthy
+              ? "connected"
+              : "unavailable"
         }
       });
-  };
+
+      return;
+    }
+
+    res.status(200).json({
+      status: "ok",
+      service:
+        "production-intelligence-platform",
+      dependencies: {
+        postgres: "connected",
+        redis: "connected"
+      }
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
 ```
 
 > **Important:** If your current `health.controller.ts` has additional response fields or helper functions from earlier lectures, preserve them. The essential change is that Redis participates in dependency readiness.
@@ -1707,6 +1774,13 @@ with:
 ```
 0 errors
 ```
+
+```
+docker compose build api
+
+```
+
+
 
 If you get a type error in the health controller, fix it before continuing.
 
