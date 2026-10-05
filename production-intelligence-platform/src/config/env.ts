@@ -171,7 +171,7 @@ const postgresPassword =
     "POSTGRES_PASSWORD"
   );
 
-  const redisHost =
+const redisHost =
   parseRequiredString(
     "REDIS_HOST"
   );
@@ -180,7 +180,14 @@ const redisPort =
   parsePositiveInteger(
     "REDIS_PORT",
     process.env.REDIS_PORT ??
-      "6379"
+    "6379"
+  );
+
+const redisConnectTimeoutMs =
+  parsePositiveInteger(
+    "REDIS_CONNECT_TIMEOUT_MS",
+    process.env.REDIS_CONNECT_TIMEOUT_MS ??
+    "5000"
   );
 
 export const env: AppConfig = {
@@ -202,11 +209,13 @@ export const env: AppConfig = {
       postgresPassword
   },
 
-   redis: {
+  redis: {
     host:
       redisHost,
     port:
-      redisPort
+      redisPort,
+    connectTimeoutMs:
+      redisConnectTimeoutMs
   },
 
   security: {

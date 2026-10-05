@@ -27,6 +27,15 @@ describe(
     );
 
     it(
+  "loads Redis connection timeout",
+  () => {
+    expect(
+      env.redis.connectTimeoutMs
+    ).toBeGreaterThan(0);
+  }
+)
+
+    it(
       "should expose a valid PostgreSQL configuration",
       () => {
 

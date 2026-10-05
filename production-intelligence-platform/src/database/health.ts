@@ -6,3 +6,4 @@ export const checkDatabaseConnection = async () => {
   return result.rows[0];
 };
 
+//  checkDatabaseHealth

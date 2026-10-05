@@ -5,7 +5,10 @@ import {
 } from "../server/lifecycle.js";
 
 
-
+import {
+  checkRedisHealth
+} from "../redis/health.js";
+import { error } from "node:console";
 
 
 export const livenessController = (
@@ -36,7 +39,7 @@ export const livenessController = (
 export const readinessController = async (
   _req: Request,
   res: Response
-) => {
+): Promise<void> => {
 
   const state =
     getApplicationState();
@@ -45,54 +48,126 @@ export const readinessController = async (
     state !== "ready"
   ) {
     res.status(503).json({
-      status: "not_ready",
-      state
+      success: false,
+      error: {
+        code:
+          "SERVICE_NOT_READY",
+        message:
+          "Service is not ready"
+      }
     });
 
     return;
   }
 
-  try {
+  const [
+    databaseHealthy,
+    redisHealthy
+  ] = await Promise.all([
+    checkDatabaseConnection(),
+    checkRedisHealth()
+  ]);
 
-    await checkDatabaseConnection();
-
-    res.status(200).json({
-      status: "ready",
-      state,
-      dependencies: {
-        postgres: "connected"
-      }
-    });
-
-  } catch (error) {
-
+  if (
+    !databaseHealthy ||
+    !redisHealthy
+  ) {
     res.status(503).json({
-      status: "not_ready",
-      state,
-      dependencies: {
-        postgres: "unavailable"
+      success: false,
+      error: {
+        code:
+          "DEPENDENCY_NOT_READY",
+        message:
+          "One or more dependencies are unavailable"
       }
     });
+
+    return;
   }
+
+  res.status(200).json({
+    status: "ready",
+    state,
+    dependencies: {
+      postgres: "connected",
+      redis: "connected"
+    }
+  });
 };
+
+
+
+// export const healthController = async (
+//   _req: Request,
+//   res: Response,
+//   next: NextFunction
+// ) => {
+//   try {
+//     await checkDatabaseConnection();
+
+//     res.status(200).json({
+//       status: "ok",
+//       service: "production-intelligence-platform",
+//       database: "connected"
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 
 export const healthController = async (
   _req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Promise<void> => {
+
   try {
-    await checkDatabaseConnection();
+
+    const [
+      databaseHealthy,
+      redisHealthy
+    ] = await Promise.all([
+      checkDatabaseConnection(),
+      checkRedisHealth()
+    ]);
+
+    const healthy =
+      databaseHealthy &&
+      redisHealthy;
+
+    if (!healthy) {
+      res.status(503).json({
+        status: "unhealthy",
+        service:
+          "production-intelligence-platform",
+        dependencies: {
+          postgres:
+            databaseHealthy
+              ? "connected"
+              : "unavailable",
+
+          redis:
+            redisHealthy
+              ? "connected"
+              : "unavailable"
+        }
+      });
+
+      return;
+    }
 
     res.status(200).json({
       status: "ok",
-      service: "production-intelligence-platform",
-      database: "connected"
+      service:
+        "production-intelligence-platform",
+      dependencies: {
+        postgres: "connected",
+        redis: "connected"
+      }
     });
+
   } catch (error) {
     next(error);
   }
 };
-
-

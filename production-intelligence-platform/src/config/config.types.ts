@@ -19,6 +19,7 @@ export interface PostgresConfig {
 export interface RedisConfig {
   host: string;
   port: number;
+  connectTimeoutMs: number;
 }
 
 export interface SecurityConfig {
