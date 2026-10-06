@@ -213,43 +213,35 @@ src/queues/bullmq.connection.ts
 ### `src/queues/bullmq.connection.ts`
 
 ```
-import type {
-  RedisOptions
-} from "ioredis";
-
 import {
   env
 } from "../config/env.js";
 
-export const createBullMQConnection =
-  (
-    maxRetriesPerRequest:
-      number | null
-  ): RedisOptions => {
+export const createBullMQConnection = (
+  maxRetriesPerRequest: number | null
+) => {
+  return {
+    host: env.redis.host,
 
-    return {
-      host:
-        env.redis.host,
+    port: env.redis.port,
 
-      port:
-        env.redis.port,
+    connectTimeout:
+      env.redis.connectTimeoutMs,
 
-      connectTimeout:
-        env.redis.connectTimeoutMs,
+    maxRetriesPerRequest,
 
-      maxRetriesPerRequest,
-
-      retryStrategy: (
-        times: number
-      ): number => {
-
-        return Math.min(
-          times * 500,
-          5000
-        );
-      }
-    };
+    retryStrategy: (
+      times: number
+    ): number => {
+      return Math.min(
+        times * 500,
+        5000
+      );
+    }
   };
+};
+
+// Need to update in doc
 ```
 
 ---
