@@ -5,8 +5,10 @@
   "main": "server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "dev:worker": "tsx watch src/workers.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "start:worker": "node dist/workers.js",
     "test": "vitest",
     "test:run": "vitest run",
     "migrate": "tsx src/database/migrate.ts"
@@ -27,6 +29,7 @@
     "vitest": "^5.0.1"
   },
   "dependencies": {
+    "bullmq": "^6.3.11",
     "dotenv": "^18.0.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
