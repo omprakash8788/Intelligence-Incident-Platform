@@ -17,6 +17,9 @@ import {
   apiRateLimiter
 } from "./config/rate-limit.js";
 
+import demoQueueRoutes
+  from "./routes/demo-queue.routes.js";
+
 const app = express();
 
 app.use(
@@ -37,6 +40,10 @@ app.use(requestLoggingMiddleware);
 // app.use(
 //   apiRateLimiter
 // );
+
+app.use(
+  demoQueueRoutes
+);
 
 app.use("/health",  healthRoutes)
 app.use("/incidents", apiRateLimiter ,incidentRoutes);
