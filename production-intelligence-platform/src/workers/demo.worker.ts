@@ -32,10 +32,38 @@ export const demoWorker =
         `[DemoWorker] Processing job ${job.id}`
       );
 
+        console.log(
+        `[DemoWorker] Mode: ${job.data.mode}`
+      );
+
+
       console.log(
         `[DemoWorker] Message: ${job.data.message}`
       );
 
+         if (
+        job.data.mode ===
+        "failure"
+      ) {
+        throw new Error(
+          "Intentional demo job failure"
+        );
+      }
+     
+         if (
+        job.data.mode ===
+        "slow"
+      ) {
+        await new Promise<void>(
+          (resolve) => {
+            setTimeout(
+              resolve,
+              10000
+            );
+          }
+        );
+      }
+      
       return {
         processed: true
       };
