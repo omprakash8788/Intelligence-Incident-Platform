@@ -6,23 +6,72 @@ import {
   addDemoJob
 } from "../queues/producers/demo.producer.js";
 
+
+import type {
+  DemoJobMode
+} from "../queues/jobs/demo.job.js";
+import { getDemoJobStatus } from "../services/demo-job.service.js";
+
 const router =
   Router();
 
 router.post(
   "/demo/jobs",
   async (
-    _req,
+    req,
     res,
     next
   ) => {
 
     try {
 
+      const {
+        message,
+        mode
+      } = req.body as {
+        message?: unknown;
+        mode?: unknown;
+      };
+
+      if (
+        typeof message !==
+        "string"
+      ) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code:
+              "INVALID_MESSAGE",
+            message:
+              "message must be a string"
+          }
+        });
+
+        return;
+      }
+
+      if (
+        mode !== "success" &&
+        mode !== "slow" &&
+        mode !== "failure"
+      ) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code:
+              "INVALID_MODE",
+            message:
+              "mode must be success, slow, or failure"
+          }
+        });
+
+        return;
+      }
+
       const jobId =
         await addDemoJob({
-          message:
-            "Hello from Production Intelligence Platform"
+          message,
+          mode: mode as DemoJobMode
         });
 
       res.status(202).json({
@@ -30,6 +79,47 @@ router.post(
         data: {
           jobId
         }
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+
+router.get(
+  "/demo/jobs/:jobId",
+  async (
+    req,
+    res,
+    next
+  ) => {
+
+    try {
+
+      const job =
+        await getDemoJobStatus(
+          req.params.jobId
+        );
+
+      if (!job) {
+        res.status(404).json({
+          success: false,
+          error: {
+            code:
+              "JOB_NOT_FOUND",
+            message:
+              "Demo job not found"
+          }
+        });
+
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: job
       });
 
     } catch (error) {
