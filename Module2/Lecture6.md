@@ -989,6 +989,14 @@ Run:
 npm run build
 ```
 
+```
+docker compose build api
+```
+
+```
+docker compose up -d --force-recreate api
+```
+
 ### Expected
 
 No TypeScript errors.
