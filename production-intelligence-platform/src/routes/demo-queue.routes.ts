@@ -53,7 +53,8 @@ router.post(
       if (
         mode !== "success" &&
         mode !== "slow" &&
-        mode !== "failure"
+        mode !== "failure" &&
+        mode !== "fail-twice"
       ) {
         res.status(400).json({
           success: false,
@@ -61,7 +62,7 @@ router.post(
             code:
               "INVALID_MODE",
             message:
-              "mode must be success, slow, or failure"
+              "mode must be success, slow, failure, or fail-twice"
           }
         });
 

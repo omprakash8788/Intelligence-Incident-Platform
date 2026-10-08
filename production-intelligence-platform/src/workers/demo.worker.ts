@@ -20,6 +20,7 @@ export const demoWorker =
     DemoJobData,
     {
       processed: boolean;
+      attempt: number;
     }
   >(
     DEMO_QUEUE_NAME,
@@ -30,6 +31,10 @@ export const demoWorker =
 
       console.log(
         `[DemoWorker] Processing job ${job.id}`
+      );
+
+       console.log(
+        `[DemoWorker] Attempt: ${job.attemptsMade + 1}`
       );
 
         console.log(
@@ -46,8 +51,25 @@ export const demoWorker =
         "failure"
       ) {
         throw new Error(
-          "Intentional demo job failure"
+          "Intentional permanent demo job failure"
         );
+      }
+
+      
+      if (
+        job.data.mode ===
+        "fail-twice"
+      ) {
+
+        if (
+          job.attemptsMade < 2
+        ) {
+          throw new Error(
+            `Intentional transient failure on attempt ${
+              job.attemptsMade + 1
+            }`
+          );
+        }
       }
      
          if (
@@ -65,7 +87,9 @@ export const demoWorker =
       }
       
       return {
-        processed: true
+        processed: true,
+          attempt:
+          job.attemptsMade + 1
       };
     },
 
@@ -96,7 +120,13 @@ demoWorker.on(
 
     console.error(
       `[DemoWorker] Job ${job?.id ?? "unknown"} failed`,
-      error
+        {
+        message:
+          error.message,
+
+        attemptsMade:
+          job?.attemptsMade
+      }
     );
   }
 );
