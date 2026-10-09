@@ -15,6 +15,16 @@ import type {
   DemoJobData
 } from "../queues/jobs/demo.job.js";
 
+
+import {
+  UnrecoverableError
+} from "bullmq";
+
+import {
+  RetryableJobError,
+  NonRetryableJobError
+} from "../errors/job.errors.js";
+
 export const demoWorker =
   new Worker<
     DemoJobData,
@@ -29,15 +39,18 @@ export const demoWorker =
       job: Job<DemoJobData>
     ) => {
 
+      const attempt =
+        job.attemptsMade + 1;
+
       console.log(
         `[DemoWorker] Processing job ${job.id}`
       );
 
-       console.log(
-        `[DemoWorker] Attempt: ${job.attemptsMade + 1}`
+      console.log(
+        `[DemoWorker] Attempt: ${attempt}`
       );
 
-        console.log(
+      console.log(
         `[DemoWorker] Mode: ${job.data.mode}`
       );
 
@@ -46,16 +59,73 @@ export const demoWorker =
         `[DemoWorker] Message: ${job.data.message}`
       );
 
-         if (
+      /*
+      * Permanent failure.
+      *
+      * This error is intentionally
+      * treated as non-retryable.
+      */
+
+      if (
         job.data.mode ===
-        "failure"
+        "non-retryable"
       ) {
-        throw new Error(
-          "Intentional permanent demo job failure"
+        const error =
+          new NonRetryableJobError(
+            "Invalid job data. This error must not be retried."
+          );
+
+        throw new UnrecoverableError(
+          error.message
         );
       }
 
-      
+      /*
+      * Retryable failure.
+      *
+      * This error is intentionally
+      * retryable.
+      */
+
+      if (
+        job.data.mode ===
+        "retryable"
+      ) {
+
+        if (
+          job.attemptsMade < 2
+        ) {
+          throw new RetryableJobError(
+            `Temporary failure on attempt ${attempt}`
+          );
+        }
+      }
+      /*
+      * Existing permanent failure
+      * from previous lectures.
+      */
+
+
+      if (
+        job.data.mode ===
+        "failure"
+      ) {
+        const error =
+          new NonRetryableJobError(
+            "Intentional permanent demo failure"
+          );
+
+        throw new UnrecoverableError(
+          error.message
+        );
+      }
+
+      /*
+      * Existing transient failure.
+      *
+      * Fail twice, then succeed.
+      */
+
       if (
         job.data.mode ===
         "fail-twice"
@@ -64,15 +134,18 @@ export const demoWorker =
         if (
           job.attemptsMade < 2
         ) {
-          throw new Error(
-            `Intentional transient failure on attempt ${
-              job.attemptsMade + 1
+          throw new RetryableJobError(
+            `Intentional transient failure on attempt ${attempt
             }`
           );
         }
       }
-     
-         if (
+
+      /*
+     * Slow job.
+     */
+
+      if (
         job.data.mode ===
         "slow"
       ) {
@@ -85,11 +158,13 @@ export const demoWorker =
           }
         );
       }
-      
+      console.log(
+        `[DemoWorker] Job ${job.id} succeeded on attempt ${attempt}`
+      );
+
       return {
         processed: true,
-          attempt:
-          job.attemptsMade + 1
+        attempt
       };
     },
 
@@ -120,12 +195,19 @@ demoWorker.on(
 
     console.error(
       `[DemoWorker] Job ${job?.id ?? "unknown"} failed`,
-        {
+      {
+
+        errorType:
+          error.name,
+
         message:
           error.message,
 
         attemptsMade:
-          job?.attemptsMade
+          job?.attemptsMade,
+
+        attemptsAllowed:
+          job?.opts.attempts
       }
     );
   }
