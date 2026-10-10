@@ -59,6 +59,12 @@ export const demoWorker =
         `[DemoWorker] Message: ${job.data.message}`
       );
 
+      if (job.data.mode === "delayed") {
+        console.log(
+          `[DemoWorker] Delayed job ${job.id} is now being processed`
+        );
+      }
+
       /*
       * Permanent failure.
       *

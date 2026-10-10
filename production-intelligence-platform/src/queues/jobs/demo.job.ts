@@ -4,7 +4,8 @@ export type DemoJobMode =
   | "failure"
   | "fail-twice"
   | "retryable"
-  | "non-retryable";
+  | "non-retryable"
+  | "delayed";
 
 export interface DemoJobData {
   message: string;

@@ -10,10 +10,32 @@ import {
 import type {
   DemoJobMode
 } from "../queues/jobs/demo.job.js";
+
 import { getDemoJobStatus } from "../services/demo-job.service.js";
+
+
+import {
+  demoQueue
+} from "../queues/demo.queue.js";
+
 
 const router =
   Router();
+
+
+const isDemoJobMode = (
+  value: unknown
+): value is DemoJobMode => {
+  return (
+    value === "success" ||
+    value === "slow" ||
+    value === "failure" ||
+    value === "fail-twice" ||
+    value === "retryable" ||
+    value === "non-retryable" ||
+    value === "delayed"
+  );
+};
 
 router.post(
   "/demo/jobs",
@@ -34,8 +56,8 @@ router.post(
       };
 
       if (
-        typeof message !==
-        "string"
+       typeof message !== "string" ||
+        message.trim() === ""
       ) {
         res.status(400).json({
           success: false,
@@ -43,38 +65,29 @@ router.post(
             code:
               "INVALID_MESSAGE",
             message:
-              "message must be a string"
+              "message must be a non-empty string"
           }
         });
 
         return;
       }
 
-      if (
-        mode !== "success" &&
-        mode !== "slow" &&
-        mode !== "failure" &&
-        mode !== "fail-twice" &&
-        mode !== "retryable" &&
-        mode !== "non-retryable"
-      ) {
+       if (!isDemoJobMode(mode)) {
         res.status(400).json({
           success: false,
           error: {
-            code:
-              "INVALID_MODE",
+            code: "INVALID_MODE",
             message:
-               "mode must be success, slow, failure, fail-twice, retryable, or non-retryable"
+              "mode is not supported"
           }
         });
-
         return;
       }
 
       const jobId =
         await addDemoJob({
-          message,
-          mode: mode as DemoJobMode
+         message: message.trim(),
+        mode
         });
 
       res.status(202).json({
@@ -84,6 +97,74 @@ router.post(
         }
       });
 
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.post(
+  "/demo/jobs/delayed",
+  async (req, res, next) => {
+    try {
+      const {
+        message,
+        delayMs
+      } = req.body as {
+        message?: unknown;
+        delayMs?: unknown;
+      };
+
+      if (
+        typeof message !== "string" ||
+        message.trim() === ""
+      ) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: "INVALID_MESSAGE",
+            message:
+              "message must be a non-empty string"
+          }
+        });
+        return;
+      }
+
+      if (
+        typeof delayMs !== "number" ||
+        !Number.isInteger(delayMs) ||
+        delayMs < 1000 ||
+        delayMs > 86_400_000
+      ) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: "INVALID_DELAY",
+            message:
+              "delayMs must be an integer between 1000 and 86400000"
+          }
+        });
+        return;
+      }
+
+      const jobId = await addDemoJob(
+        {
+          message: message.trim(),
+          mode: "delayed"
+        },
+        {
+          delayMs
+        }
+      );
+
+      res.status(202).json({
+        success: true,
+        data: {
+          jobId,
+          state: "scheduled",
+          delayMs
+        }
+      });
     } catch (error) {
       next(error);
     }
@@ -130,6 +211,58 @@ router.get(
     }
   }
 );
+
+
+router.delete(
+  "/demo/jobs/:jobId",
+  async (req, res, next) => {
+    try {
+      const job =
+        await demoQueue.getJob(
+          req.params.jobId
+        );
+
+      if (!job) {
+        res.status(404).json({
+          success: false,
+          error: {
+            code: "JOB_NOT_FOUND",
+            message: "Demo job not found"
+          }
+        });
+        return;
+      }
+
+      const state =
+        await job.getState();
+
+      if (state !== "delayed") {
+        res.status(409).json({
+          success: false,
+          error: {
+            code: "JOB_NOT_DELAYED",
+            message:
+              "Only jobs currently in the delayed state can be cancelled by this endpoint"
+          }
+        });
+        return;
+      }
+
+      await job.remove();
+
+      res.status(200).json({
+        success: true,
+        data: {
+          jobId: req.params.jobId,
+          cancelled: true
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 
 export default router;
 
