@@ -1,5 +1,4 @@
 import type {
-    Job,
     JobState
 } from "bullmq";
 
@@ -16,6 +15,10 @@ export interface DemoJobStatus {
     attemptsMade: number;
     attemptsAllowed: number;
     failedReason: string | undefined;
+    delay: number;
+    timestamp: number;
+    processedOn: number | undefined;
+    finishedOn: number | undefined;
 }
 
 export const getDemoJobStatus =
@@ -59,6 +62,10 @@ export const getDemoJobStatus =
                 job.opts.attempts ?? 1,
 
             failedReason:
-                job.failedReason
+                job.failedReason,
+            delay: job.delay,
+            timestamp: job.timestamp,
+            processedOn: job.processedOn,
+            finishedOn: job.finishedOn
         };
     };
