@@ -8,7 +8,8 @@ import {
 
 
 import type {
-  DemoJobMode
+  DemoJobMode,
+  DemoJobPriority
 } from "../queues/jobs/demo.job.js";
 
 import { getDemoJobStatus } from "../services/demo-job.service.js";
@@ -33,8 +34,34 @@ const isDemoJobMode = (
     value === "fail-twice" ||
     value === "retryable" ||
     value === "non-retryable" ||
-    value === "delayed"
+    value === "delayed" ||
+    value === "progress"
   );
+};
+
+const isDemoJobPriority = (
+  value: unknown
+): value is DemoJobPriority => {
+  return (
+    value === 1 ||
+    value === 2 ||
+    value === 5 ||
+    value === 10
+  );
+};
+
+const parsePriority = (
+  value: unknown
+): DemoJobPriority | null => {
+  if (value === undefined) {
+    return 5;
+  }
+
+  if (isDemoJobPriority(value)) {
+    return value;
+  }
+
+  return null;
 };
 
 router.post(
@@ -49,14 +76,16 @@ router.post(
 
       const {
         message,
-        mode
+        mode,
+        priority
       } = req.body as {
         message?: unknown;
         mode?: unknown;
+        priority?: unknown;
       };
 
       if (
-       typeof message !== "string" ||
+        typeof message !== "string" ||
         message.trim() === ""
       ) {
         res.status(400).json({
@@ -72,7 +101,7 @@ router.post(
         return;
       }
 
-       if (!isDemoJobMode(mode)) {
+      if (!isDemoJobMode(mode)) {
         res.status(400).json({
           success: false,
           error: {
@@ -84,16 +113,36 @@ router.post(
         return;
       }
 
-      const jobId =
-        await addDemoJob({
-         message: message.trim(),
-        mode
+      const parsedPriority =
+        parsePriority(priority);
+
+      if (parsedPriority === null) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: "INVALID_PRIORITY",
+            message:
+              "priority must be 1, 2, 5, or 10"
+          }
         });
+        return;
+      }
+
+      const jobId =
+        await addDemoJob(
+          {
+            message: message.trim(),
+            mode
+          }, {
+          priority: parsedPriority
+        }
+        );
 
       res.status(202).json({
         success: true,
         data: {
-          jobId
+          jobId,
+          priority: parsedPriority
         }
       });
 
@@ -109,10 +158,12 @@ router.post(
     try {
       const {
         message,
-        delayMs
+        delayMs,
+        priority
       } = req.body as {
         message?: unknown;
         delayMs?: unknown;
+        priority?: unknown;
       };
 
       if (
@@ -147,13 +198,29 @@ router.post(
         return;
       }
 
+      const parsedPriority =
+        parsePriority(priority);
+
+      if (parsedPriority === null) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: "INVALID_PRIORITY",
+            message:
+              "priority must be 1, 2, 5, or 10"
+          }
+        });
+        return;
+      }
+
       const jobId = await addDemoJob(
         {
           message: message.trim(),
           mode: "delayed"
         },
         {
-          delayMs
+          delayMs,
+          priority: parsedPriority
         }
       );
 
@@ -162,7 +229,8 @@ router.post(
         data: {
           jobId,
           state: "scheduled",
-          delayMs
+          delayMs,
+          priority: parsedPriority
         }
       });
     } catch (error) {
@@ -171,6 +239,41 @@ router.post(
   }
 );
 
+router.get(
+  "/demo/jobs/:jobId/progress",
+  async (req, res, next) => {
+    try {
+      const job =
+        await getDemoJobStatus(
+          req.params.jobId
+        );
+
+      if (!job) {
+        res.status(404).json({
+          success: false,
+          error: {
+            code: "JOB_NOT_FOUND",
+            message: "Demo job not found"
+          }
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          jobId: job.id,
+          state: job.state,
+          progress: job.progress,
+          attemptsMade: job.attemptsMade,
+          failedReason: job.failedReason
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 router.get(
   "/demo/jobs/:jobId",
