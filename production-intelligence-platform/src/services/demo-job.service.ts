@@ -19,6 +19,7 @@ export interface DemoJobStatus {
     timestamp: number;
     processedOn: number | undefined;
     finishedOn: number | undefined;
+    progress: number | object | unknown;
 }
 
 export const getDemoJobStatus =
@@ -41,28 +42,15 @@ export const getDemoJobStatus =
             await job.getState();
 
         return {
-            id:
-                job.id ?? jobId,
-
-            name:
-                job.name,
-
+            id: job.id ?? jobId,
+            name: job.name,
             state,
-
-            data:
-                job.data,
-
-            result:
-                job.returnvalue,
-
-            attemptsMade:
-                job.attemptsMade,
-
-            attemptsAllowed:
-                job.opts.attempts ?? 1,
-
-            failedReason:
-                job.failedReason,
+            data: job.data,
+            result: job.returnvalue,
+            progress: job.progress,
+            attemptsMade: job.attemptsMade,
+            attemptsAllowed: job.opts.attempts ?? 1,
+            failedReason: job.failedReason,
             delay: job.delay,
             timestamp: job.timestamp,
             processedOn: job.processedOn,

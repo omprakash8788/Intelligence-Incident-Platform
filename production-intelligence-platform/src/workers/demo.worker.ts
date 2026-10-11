@@ -12,7 +12,8 @@ import {
 } from "../queues/bullmq.connection.js";
 
 import type {
-  DemoJobData
+  DemoJobData,
+  DemoJobProgress
 } from "../queues/jobs/demo.job.js";
 
 
@@ -24,6 +25,15 @@ import {
   RetryableJobError,
   NonRetryableJobError
 } from "../errors/job.errors.js";
+
+
+const sleep = (
+  milliseconds: number
+): Promise<void> => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+};
 
 export const demoWorker =
   new Worker<
@@ -51,12 +61,15 @@ export const demoWorker =
       );
 
       console.log(
-        `[DemoWorker] Mode: ${job.data.mode}`
+        `[DemoWorker] Priority: ${job.opts.priority ?? "default"}`
       );
-
 
       console.log(
         `[DemoWorker] Message: ${job.data.message}`
+      );
+
+      console.log(
+        `[DemoWorker] Mode: ${job.data.mode}`
       );
 
       if (job.data.mode === "delayed") {
@@ -94,17 +107,12 @@ export const demoWorker =
       */
 
       if (
-        job.data.mode ===
-        "retryable"
+        job.data.mode === "retryable" &&
+        job.attemptsMade < 2
       ) {
-
-        if (
-          job.attemptsMade < 2
-        ) {
-          throw new RetryableJobError(
-            `Temporary failure on attempt ${attempt}`
-          );
-        }
+        throw new RetryableJobError(
+          `Temporary failure on attempt ${attempt}`
+        );
       }
       /*
       * Existing permanent failure
@@ -133,18 +141,12 @@ export const demoWorker =
       */
 
       if (
-        job.data.mode ===
-        "fail-twice"
+        job.data.mode === "fail-twice" &&
+        job.attemptsMade < 2
       ) {
-
-        if (
-          job.attemptsMade < 2
-        ) {
-          throw new RetryableJobError(
-            `Intentional transient failure on attempt ${attempt
-            }`
-          );
-        }
+        throw new RetryableJobError(
+          `Intentional transient failure on attempt ${attempt}`
+        );
       }
 
       /*
@@ -155,18 +157,46 @@ export const demoWorker =
         job.data.mode ===
         "slow"
       ) {
-        await new Promise<void>(
-          (resolve) => {
-            setTimeout(
-              resolve,
-              10000
-            );
-          }
-        );
+        await sleep(10_000);
       }
+
+
       console.log(
         `[DemoWorker] Job ${job.id} succeeded on attempt ${attempt}`
       );
+
+      if (
+        job.data.mode === "progress"
+      ) {
+        const total = 10;
+
+        for (
+          let completed = 1;
+          completed <= total;
+          completed++
+        ) {
+          await sleep(1_000);
+
+          const progress: DemoJobProgress = {
+            completed,
+            total,
+            percentage:
+              Math.round(
+                (completed / total) * 100
+              ),
+            currentStep:
+              `Diagnostic step ${completed} of ${total}`
+          };
+
+          await job.updateProgress(
+            progress
+          );
+
+          console.log(
+            `[DemoWorker] Job ${job.id}: ${progress.percentage}%`
+          );
+        }
+      }
 
       return {
         processed: true,

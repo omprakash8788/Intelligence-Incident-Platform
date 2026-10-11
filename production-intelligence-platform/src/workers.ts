@@ -2,24 +2,94 @@ import {
   demoWorker
 } from "./workers/demo.worker.js";
 
-console.log(
-  "Worker process started"
-);
+import {
+  startDemoQueueEvents,
+  closeDemoQueueEvents
+} from "./queues/demo.queue-events.js";
+
+
+import {
+  logger
+} from "./logging/logger.js";
+
+let isShuttingDown = false;
+
+// console.log(
+//   "Worker process started"
+// );
+
+const start =
+  async (): Promise<void> => {
+    try {
+      await startDemoQueueEvents();
+
+      logger.info(
+        "Worker process started"
+      );
+    } catch (error) {
+      logger.error(
+        "Worker process startup failed",
+        {
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error)
+        }
+      );
+
+      await demoWorker.close();
+
+      process.exitCode = 1;
+    }
+  };
 
 const shutdown =
   async (
     signal: string
   ): Promise<void> => {
+    if (isShuttingDown) {
+      logger.warn(
+        "Worker shutdown already in progress",
+        {
+          signal
+        }
+      );
 
-    console.log(
-      `Worker shutdown started: ${signal}`
+      return;
+    }
+
+    isShuttingDown = true;
+
+    logger.info(
+      "Worker shutdown started",
+      {
+        signal
+      }
     );
 
-    await demoWorker.close();
+    try {
+      await demoWorker.close();
 
-    console.log(
-      "Worker shutdown completed"
-    );
+      await closeDemoQueueEvents();
+
+      logger.info(
+        "Worker shutdown completed"
+      );
+
+      process.exitCode = 0;
+    } catch (error) {
+      logger.error(
+        "Worker shutdown failed",
+        {
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error)
+        }
+      );
+
+      process.exitCode = 1;
+    }
   };
 
 process.on(
@@ -35,4 +105,6 @@ process.on(
     void shutdown("SIGTERM");
   }
 );
+
+void start();
 
