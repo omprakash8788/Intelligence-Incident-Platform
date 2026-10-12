@@ -114,7 +114,6 @@ export interface DemoQueueMetrics {
     delayed: number;
     completed: number;
     failed: number;
-    paused: number;
     waitingChildren: number;
   };
   backlog: number;
@@ -134,7 +133,6 @@ export const getDemoQueueMetrics =
         "delayed",
         "completed",
         "failed",
-        "paused",
         "waiting-children"
       );
 
@@ -144,7 +142,6 @@ export const getDemoQueueMetrics =
       delayed: counts.delayed ?? 0,
       completed: counts.completed ?? 0,
       failed: counts.failed ?? 0,
-      paused: counts.paused ?? 0,
       waitingChildren:
         counts["waiting-children"] ?? 0
     };
@@ -241,7 +238,9 @@ import queueMonitoringRoutes
   from "./routes/queue-monitoring.routes.js";
 ```
 Register it alongside your other routes, before your not-found middleware and error handler:
+```
 app.use(queueMonitoringRoutes);
+```
 
 
 Do not duplicate existing middleware or change the established error-handler order.

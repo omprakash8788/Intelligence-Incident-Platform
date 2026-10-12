@@ -12,6 +12,8 @@ import {
   securityMiddleware
 } from "./middleware/security.middleware.js";
 
+import externalApiRoutes
+  from "./routes/external-api.routes.js";
 
 import {
   apiRateLimiter
@@ -19,6 +21,9 @@ import {
 
 import demoQueueRoutes
   from "./routes/demo-queue.routes.js";
+
+import queueMonitoringRoutes
+  from "./routes/queue-monitoring.routes.js";
 
 const app = express();
 
@@ -34,8 +39,9 @@ app.use(
 );
 
 app.use(requestContextMiddleware);
-
+app.use(queueMonitoringRoutes);
 app.use(requestLoggingMiddleware);
+app.use(externalApiRoutes);
 
 // app.use(
 //   apiRateLimiter
