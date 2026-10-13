@@ -25,6 +25,9 @@ import demoQueueRoutes
 import queueMonitoringRoutes
   from "./routes/queue-monitoring.routes.js";
 
+import queueRoutingRoutes
+  from "./routes/queue-routing.routes.js";
+
 const app = express();
 
 app.use(
@@ -42,6 +45,7 @@ app.use(requestContextMiddleware);
 app.use(queueMonitoringRoutes);
 app.use(requestLoggingMiddleware);
 app.use(externalApiRoutes);
+app.use(queueRoutingRoutes);
 
 // app.use(
 //   apiRateLimiter
