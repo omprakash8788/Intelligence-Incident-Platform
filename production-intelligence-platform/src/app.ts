@@ -28,6 +28,9 @@ import queueMonitoringRoutes
 import queueRoutingRoutes
   from "./routes/queue-routing.routes.js";
 
+import fanoutRoutes
+  from "./routes/fanout.routes.js";
+
 const app = express();
 
 app.use(
@@ -46,6 +49,7 @@ app.use(queueMonitoringRoutes);
 app.use(requestLoggingMiddleware);
 app.use(externalApiRoutes);
 app.use(queueRoutingRoutes);
+app.use(fanoutRoutes);
 
 // app.use(
 //   apiRateLimiter
