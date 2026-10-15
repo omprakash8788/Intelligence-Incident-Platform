@@ -29,6 +29,24 @@ import {
   waitForFanoutQueuesReady
 } from "./queues/fanout.queues.js";
 
+
+import {
+  pipelineNormalizeWorker
+} from "./workers/pipeline-normalize.worker.js";
+
+import {
+  pipelineAnalyzeWorker
+} from "./workers/pipeline-analyze.worker.js";
+
+import {
+  pipelineReportWorker
+} from "./workers/pipeline-report.worker.js";
+
+import {
+  closePipelineQueues,
+  waitForPipelineQueuesReady
+} from "./queues/pipeline.queues.js";
+
 let isShuttingDown = false;
 
 const start = async (): Promise<void> => {
@@ -41,9 +59,14 @@ const start = async (): Promise<void> => {
 
     await waitForFanoutQueuesReady();
 
+    await waitForPipelineQueuesReady();
+
     await Promise.all([
       fanoutTaskWorker.waitUntilReady(),
-      fanoutAggregateWorker.waitUntilReady()
+      fanoutAggregateWorker.waitUntilReady(),
+      pipelineNormalizeWorker.waitUntilReady(),
+      pipelineAnalyzeWorker.waitUntilReady(),
+      pipelineReportWorker.waitUntilReady()
     ]);
 
     logger.info("Worker process started");
@@ -57,12 +80,27 @@ const start = async (): Promise<void> => {
 
 
     await Promise.allSettled([
+      // Existing workers
       demoWorker.close(),
       externalApiWorker.close(),
-      closeDemoQueueEvents()
+
+      // Fan-out workers
+      fanoutTaskWorker.close(),
+      fanoutAggregateWorker.close(),
+
+      // Pipeline workers
+      pipelineNormalizeWorker.close(),
+      pipelineAnalyzeWorker.close(),
+      pipelineReportWorker.close(),
+
+      // Queue resources
+      closeDemoQueueEvents(),
+      closeFanoutQueues(),
+      closePipelineQueues()
     ]);
 
     process.exitCode = 1;
+
   }
 };
 
@@ -90,13 +128,18 @@ const shutdown = async (
       demoWorker.close(),
       externalApiWorker.close(),
       fanoutTaskWorker.close(),
-      fanoutAggregateWorker.close()
+      fanoutAggregateWorker.close(),
+      pipelineNormalizeWorker.close(),
+      pipelineAnalyzeWorker.close(),
+      pipelineReportWorker.close()
     ]);
     // 2. Close QueueEvents.
-    await closeDemoQueueEvents(),
+    await closeDemoQueueEvents();
 
-    // 3. Close fan-out queues and FlowProducer.
-    await closeFanoutQueues();
+      // 3. Close fan-out queues and FlowProducer.
+      await closeFanoutQueues();
+
+    await closePipelineQueues();
 
 
     logger.info("Worker shutdown completed");
