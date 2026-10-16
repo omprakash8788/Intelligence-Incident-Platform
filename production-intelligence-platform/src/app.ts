@@ -34,6 +34,22 @@ import fanoutRoutes
 import pipelineRoutes
   from "./routes/pipeline.routes.js";
 
+import { batchRoutes } from "./routes/batch.routes.js";
+
+import {
+  parentChildRoutes
+} from "./routes/parent-child.routes.js";
+
+import {
+  workloadRoutes
+} from "./routes/workload.routes.js";
+
+
+import {
+  shardedJobRoutes
+} from "./routes/sharded-job.routes.js";
+
+
 const app = express();
 
 app.use(
@@ -47,6 +63,22 @@ app.use(
   })
 );
 
+app.use("/demo/batches", batchRoutes);
+app.use(
+  "/demo/parent-child",
+  parentChildRoutes
+);
+
+app.use(
+  "/demo/workloads",
+  workloadRoutes
+);
+
+app.use(
+  "/demo/sharded-jobs",
+  shardedJobRoutes
+);
+
 app.use(requestContextMiddleware);
 app.use(queueMonitoringRoutes);
 app.use(requestLoggingMiddleware);
@@ -54,6 +86,7 @@ app.use(externalApiRoutes);
 app.use(queueRoutingRoutes);
 app.use(fanoutRoutes);
 app.use(pipelineRoutes);
+
 
 // app.use(
 //   apiRateLimiter

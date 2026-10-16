@@ -47,6 +47,45 @@ import {
   waitForPipelineQueuesReady
 } from "./queues/pipeline.queues.js";
 
+import {
+  parentChildItemWorker
+} from "./workers/parent-child-item.worker.js";
+
+import {
+  parentChildParentWorker
+} from "./workers/parent-child-parent.worker.js";
+
+import {
+  closeParentChildQueues,
+  waitForParentChildQueuesReady
+} from "./queues/parent-child.queues.js";
+
+
+import {
+  interactiveWorkloadWorker
+} from "./workers/interactive-workload.worker.js";
+
+import {
+  batchWorkloadWorker
+} from "./workers/batch-workload.worker.js";
+
+import {
+  closeWorkloadQueues,
+  waitForWorkloadQueuesReady
+} from "./queues/workload.queues.js";
+
+
+import {
+  shardedWorkers
+} from "./workers/sharded.worker.js";
+
+import {
+  closeShardedQueues,
+  waitForShardedQueuesReady
+} from "./queues/sharded.queues.js";
+
+
+
 let isShuttingDown = false;
 
 const start = async (): Promise<void> => {
@@ -61,12 +100,26 @@ const start = async (): Promise<void> => {
 
     await waitForPipelineQueuesReady();
 
+    await waitForParentChildQueuesReady();
+
+    await waitForWorkloadQueuesReady();
+
+    await waitForShardedQueuesReady();
+
+
     await Promise.all([
       fanoutTaskWorker.waitUntilReady(),
       fanoutAggregateWorker.waitUntilReady(),
       pipelineNormalizeWorker.waitUntilReady(),
       pipelineAnalyzeWorker.waitUntilReady(),
-      pipelineReportWorker.waitUntilReady()
+      pipelineReportWorker.waitUntilReady(),
+      parentChildItemWorker.waitUntilReady(),
+      parentChildParentWorker.waitUntilReady(),
+      interactiveWorkloadWorker.waitUntilReady(),
+      batchWorkloadWorker.waitUntilReady(),
+      shardedWorkers.map(
+        (worker) => worker.waitUntilReady()
+      )
     ]);
 
     logger.info("Worker process started");
@@ -93,10 +146,25 @@ const start = async (): Promise<void> => {
       pipelineAnalyzeWorker.close(),
       pipelineReportWorker.close(),
 
+      parentChildItemWorker.close(),
+      parentChildParentWorker.close(),
+
+      interactiveWorkloadWorker.close(),
+      batchWorkloadWorker.close(),
+
+      ...shardedWorkers.map(
+  (worker) => worker.close()
+),
+
       // Queue resources
       closeDemoQueueEvents(),
       closeFanoutQueues(),
-      closePipelineQueues()
+      closePipelineQueues(),
+      closeParentChildQueues(),
+
+      closeWorkloadQueues(),
+
+      closeShardedQueues()
     ]);
 
     process.exitCode = 1;
@@ -131,15 +199,31 @@ const shutdown = async (
       fanoutAggregateWorker.close(),
       pipelineNormalizeWorker.close(),
       pipelineAnalyzeWorker.close(),
-      pipelineReportWorker.close()
+      pipelineReportWorker.close(),
+      parentChildItemWorker.close(),
+      parentChildParentWorker.close(),
+      interactiveWorkloadWorker.close(),
+      batchWorkloadWorker.close(),
+      ...shardedWorkers.map(
+  (worker) => worker.close()
+)
     ]);
+
+
+
+    await closeParentChildQueues();
+
     // 2. Close QueueEvents.
     await closeDemoQueueEvents();
 
-      // 3. Close fan-out queues and FlowProducer.
-      await closeFanoutQueues();
+    // 3. Close fan-out queues and FlowProducer.
+    await closeFanoutQueues();
 
     await closePipelineQueues();
+
+    await closeWorkloadQueues();
+
+    await closeShardedQueues();
 
 
     logger.info("Worker shutdown completed");
