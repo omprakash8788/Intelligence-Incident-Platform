@@ -84,6 +84,19 @@ import {
   waitForShardedQueuesReady
 } from "./queues/sharded.queues.js";
 
+import {
+  idempotencyWorker
+} from "./workers/idempotency.worker.js";
+
+import {
+  closeIdempotencyQueue,
+  waitForIdempotencyQueueReady
+} from "./queues/idempotency.queue.js";
+
+import { distributedLockWorker } from "./workers/distributed-lock.worker.js";
+
+import { distributedLockQueue } from "./queues/distributed-lock.queue.js";
+
 
 
 let isShuttingDown = false;
@@ -107,6 +120,9 @@ const start = async (): Promise<void> => {
     await waitForShardedQueuesReady();
 
 
+    await waitForIdempotencyQueueReady();
+
+
     await Promise.all([
       fanoutTaskWorker.waitUntilReady(),
       fanoutAggregateWorker.waitUntilReady(),
@@ -119,7 +135,11 @@ const start = async (): Promise<void> => {
       batchWorkloadWorker.waitUntilReady(),
       shardedWorkers.map(
         (worker) => worker.waitUntilReady()
-      )
+      ),
+      idempotencyWorker.waitUntilReady(),
+      distributedLockQueue.waitUntilReady(),
+      distributedLockWorker.waitUntilReady()
+
     ]);
 
     logger.info("Worker process started");
@@ -153,8 +173,13 @@ const start = async (): Promise<void> => {
       batchWorkloadWorker.close(),
 
       ...shardedWorkers.map(
-  (worker) => worker.close()
-),
+        (worker) => worker.close()
+      ),
+
+      idempotencyWorker.close(),
+
+      distributedLockWorker.close(),
+      distributedLockQueue.close(),
 
       // Queue resources
       closeDemoQueueEvents(),
@@ -164,7 +189,9 @@ const start = async (): Promise<void> => {
 
       closeWorkloadQueues(),
 
-      closeShardedQueues()
+      closeShardedQueues(),
+
+      closeIdempotencyQueue()
     ]);
 
     process.exitCode = 1;
@@ -205,9 +232,12 @@ const shutdown = async (
       interactiveWorkloadWorker.close(),
       batchWorkloadWorker.close(),
       ...shardedWorkers.map(
-  (worker) => worker.close()
-)
+        (worker) => worker.close()
+      ),
+      distributedLockWorker.close(),
+      distributedLockQueue.close()
     ]);
+
 
 
 
@@ -224,6 +254,8 @@ const shutdown = async (
     await closeWorkloadQueues();
 
     await closeShardedQueues();
+
+    await closeIdempotencyQueue();
 
 
     logger.info("Worker shutdown completed");

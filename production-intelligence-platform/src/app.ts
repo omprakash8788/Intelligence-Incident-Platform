@@ -49,6 +49,13 @@ import {
   shardedJobRoutes
 } from "./routes/sharded-job.routes.js";
 
+import {
+  idempotencyRoutes
+} from "./routes/idempotency.routes.js";
+
+
+import { distributedLockRoutes } from "./routes/distributed-lock.routes.js";
+
 
 const app = express();
 
@@ -78,6 +85,13 @@ app.use(
   "/demo/sharded-jobs",
   shardedJobRoutes
 );
+
+app.use(
+  "/demo/idempotency",
+  idempotencyRoutes
+);
+
+app.use("/demo/locks", distributedLockRoutes);
 
 app.use(requestContextMiddleware);
 app.use(queueMonitoringRoutes);
