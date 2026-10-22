@@ -6,7 +6,21 @@ import {
   getDemoQueueMetrics
 } from "../services/demo-queue-metrics.service.js";
 
+import {
+  httpMetrics
+} from "../services/http-metrics.service.js";
+
 const router = Router();
+
+router.get(
+  "/monitoring/metrics",
+  (_req, res) => {
+    res.status(200).json({
+      success: true,
+      data: httpMetrics.snapshot()
+    });
+  }
+);
 
 router.get(
   "/monitoring/queues/demo",
@@ -21,8 +35,7 @@ router.get(
           : 503;
 
       res.status(statusCode).json({
-        success:
-          metrics.health === "healthy",
+        success: metrics.health === "healthy",
         data: metrics
       });
     } catch (error) {
@@ -32,4 +45,3 @@ router.get(
 );
 
 export default router;
-
