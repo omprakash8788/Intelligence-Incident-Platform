@@ -18,6 +18,10 @@ import {
   logger
 } from "../logging/logger.js";
 
+import {
+  workerMetrics
+} from "../services/worker-metrics.service.js";
+
 const simulateExternalApiRequest =
   async (
     data: ExternalApiJobData
@@ -43,6 +47,7 @@ export const externalApiWorker =
     EXTERNAL_API_QUEUE_NAME,
 
     async (job) => {
+       workerMetrics.jobStarted();
       logger.info(
         "External API job started",
         {
@@ -66,7 +71,7 @@ export const externalApiWorker =
           processedAt: result.processedAt
         }
       );
-
+       workerMetrics.jobCompleted();
       return result;
     },
 
@@ -89,6 +94,7 @@ export const externalApiWorker =
 externalApiWorker.on(
   "failed",
   (job, error) => {
+      workerMetrics.jobFailed();
     logger.error(
       "External API job failed",
       {
