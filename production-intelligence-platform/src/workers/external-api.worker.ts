@@ -1,4 +1,8 @@
-import { Worker } from "bullmq";
+import { tryCatch, Worker } from "bullmq";
+
+import {
+  workerPerformanceMetrics
+} from "../services/worker-performance-metrics.service.js";
 
 import {
   createBullMQConnection
@@ -47,32 +51,42 @@ export const externalApiWorker =
     EXTERNAL_API_QUEUE_NAME,
 
     async (job) => {
-       workerMetrics.jobStarted();
+      const jobId = String(job.id);
+      //  workerMetrics.jobStarted();
+      workerPerformanceMetrics.jobStarted(jobId);
       logger.info(
         "External API job started",
         {
           queue: EXTERNAL_API_QUEUE_NAME,
-          jobId: job.id,
+          jobId,
           requestId: job.data.requestId
         }
       );
 
-      const result =
-        await simulateExternalApiRequest(
-          job.data
-        );
+      try {
+        const result =
+          await simulateExternalApiRequest(
+            job.data
+          );
 
-      logger.info(
-        "External API job completed",
-        {
-          queue: EXTERNAL_API_QUEUE_NAME,
-          jobId: job.id,
-          requestId: result.requestId,
-          processedAt: result.processedAt
-        }
-      );
-       workerMetrics.jobCompleted();
-      return result;
+        workerPerformanceMetrics.jobCompleted(jobId);
+        logger.info(
+          "External API job completed",
+          {
+            queue: EXTERNAL_API_QUEUE_NAME,
+            jobId,
+            requestId: result.requestId,
+            processedAt: result.processedAt
+          }
+        );
+        //  workerMetrics.jobCompleted();
+        return result;
+      } catch (error) {
+        workerPerformanceMetrics.jobFailed(jobId);
+        throw error;
+      }
+
+
     },
 
     {
@@ -94,12 +108,16 @@ export const externalApiWorker =
 externalApiWorker.on(
   "failed",
   (job, error) => {
-      workerMetrics.jobFailed();
+    if (job && job.attemptsMade < job.opts.attempts!) {
+      workerPerformanceMetrics.jobRetried();
+    }
     logger.error(
       "External API job failed",
       {
-        queue: EXTERNAL_API_QUEUE_NAME,
+       queue: EXTERNAL_API_QUEUE_NAME,
         jobId: job?.id,
+        attemptsMade: job?.attemptsMade,
+        configuredAttempts: job?.opts.attempts,
         error: error.message
       }
     );
