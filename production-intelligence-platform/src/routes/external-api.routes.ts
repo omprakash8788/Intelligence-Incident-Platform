@@ -9,6 +9,10 @@ import {
   enqueueExternalApiRequest
 } from "../queues/producers/external-api.producer.js";
 
+import {
+  workerPerformanceMetrics
+} from "../services/worker-performance-metrics.service.js";
+
 const router = Router();
 
 router.post(
@@ -45,6 +49,17 @@ router.post(
     } catch (error) {
       next(error);
     }
+  }
+);
+
+
+router.get(
+  "/monitoring/workers/external-api",
+  (_req, res) => {
+    res.status(200).json({
+      success: true,
+      data: workerPerformanceMetrics.snapshot()
+    });
   }
 );
 
