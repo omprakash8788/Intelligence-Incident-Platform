@@ -4,6 +4,7 @@
 **Project:** Production Intelligence & Incident Platform  
 **Stack:** Node.js, TypeScript, BullMQ, Redis, Express  
 **Design:** Deterministic metrics and rules. No AI, RAG, or agents.
+**Design:** Deterministic metrics and rules. No AI, RAG, or agents.
 
 ---
 
