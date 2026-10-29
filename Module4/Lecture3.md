@@ -9,6 +9,7 @@
 ---
 
 
+
 ## 1. What we are building
 
 Our worker metrics currently track how many jobs started, completed, and failed. Those counters alone cannot tell us whether processing is getting slower.
